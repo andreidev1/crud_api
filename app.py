@@ -4,6 +4,7 @@ from flask import Flask, request
 from flask_restx import Resource, Api, marshal_with, fields
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from functools import wraps
 
 
 app = Flask(__name__)
@@ -16,7 +17,19 @@ db = SQLAlchemy(app)
 
 migrate = Migrate(app, db)
 
-api = Api(app)
+
+
+
+authorizations = {
+    'apikey' : {
+        'type' : 'apiKey',
+        'in' : 'header',
+        'name' : 'X-API-KEY'
+    }
+}
+
+api = Api(app, title='Items API', authorizations=authorizations,  description='API about Items')
+
 
 
 taskFields = {
@@ -24,6 +37,28 @@ taskFields = {
     'name' : fields.String
 }
 
+
+
+def token_required(f):
+    wraps(f)
+    def decorated(*args, **kwargs):
+
+        token = None
+
+        if 'X-API-KEY' in request.headers:
+            token = request.headers['X-API-KEY']
+
+        if not token:
+            return {'result' : 'Token is missing.'}, 401
+
+        if token != 'mytoken':
+            return {'result' : 'Token is not valid'}, 401
+
+        print('TOKEN : ' + token)
+        return f(*args, **kwargs)
+    
+    return decorated
+    
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -34,6 +69,9 @@ class Task(db.Model):
 
 
 class Items(Resource):
+
+    @api.doc(security='apikey')
+    @token_required
     @marshal_with(taskFields)
     def get(self):
         tasks = Task.query.all()
@@ -80,7 +118,11 @@ class Item(Resource):
         return {'result' : 'Deleted id : #' + str(id)}
 
 
+def get_len():
+    tasks = Task.query.all()
+    print(len(tasks))
 
+get_len()
 
 api.add_resource(Items, '/items/')
 api.add_resource(Item, '/item/<int:id>')
