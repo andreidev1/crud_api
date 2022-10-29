@@ -70,8 +70,6 @@ class Task(db.Model):
 
 class Items(Resource):
 
-    @api.doc(security='apikey')
-    @token_required
     @marshal_with(taskFields)
     def get(self):
         tasks = Task.query.all()
@@ -118,11 +116,6 @@ class Item(Resource):
         return {'result' : 'Deleted id : #' + str(id)}
 
 
-def get_len():
-    tasks = Task.query.all()
-    print(len(tasks))
-
-get_len()
 
 api.add_resource(Items, '/items/')
 api.add_resource(Item, '/item/<int:id>')
