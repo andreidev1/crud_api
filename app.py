@@ -70,6 +70,8 @@ class Task(db.Model):
 
 class Items(Resource):
 
+    #@api.doc(security='apikey')
+    #@token_required
     @marshal_with(taskFields)
     def get(self):
         tasks = Task.query.all()
